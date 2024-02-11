@@ -118,124 +118,21 @@ import matplotlib.cm as cm
 
 
 if __name__ == "__main__":    
-    import numpy as np
-
-    # rand
-    np.random.seed(0)
-
-    n1 = 5 # サイズ横
-    n2 = 5 # サイズ縦
-    npr_elem_gh = np.random.randn(n2,n1-1) # 横結合
-    #npr_elem_gh = np.array([[1,1,1,-1,1,1,1,1,1]])
-    """
-    npr_elem_gh = np.array([
-        [1, 1, -1, 1],
-        [1, 1, 1, 1]
-        ])
-    """
-    #npr_elem_gv = np.array([1,0,0,-1,1]) 
-    npr_elem_gv = np.random.randn(n1*(n2-1)) # 縦結合
-
-    """
-    npr_elem_gh = np.array([
-            [1,1],
-            [1,1],
-            [1,-1.01]
-            ])#*(-1)
-    npr_elem_gv = np.array([
-            1,1,-1.,#1, 1,-1,
-            1,1,0,#1, 1,-1,
-            ])
-    """
-    
-    # 非対角成分が npr_g1 である n1 x n1 行列 を n2 個作る
-    npr_gh_block = np.zeros((n2,n1,n1), dtype=complex)
-    for i in range(n2):
-        npr_gh_block[i] = np.diagflat(npr_elem_gh[i], k=1) + np.diagflat(npr_elem_gh[i], k=-1)
-
-    # npr_gh の各要素をブロック対角行列として結合
-    npr_gh = np.zeros((n2*n1,n2*n1), dtype=complex)
-    for i in range(n2):
-        npr_gh[i*n1:(i+1)*n1, i*n1:(i+1)*n1] = npr_gh_block[i]
-
-    npr_gv = np.zeros((n1*n2,n1*n2), dtype=complex)
-    for i in range(n1*(n2-1)):
-        npr_gv[i,i+n1] = npr_elem_gv[i]
-        npr_gv[i+n1,i] = npr_elem_gv[i]
-
-    # np.round(npr_g,2).real # debug
-    npr_g = npr_gh + npr_gv
-
-    # npr_g の対角成分を、それぞれの行の非対角成分の絶対値の和にする
-    npr_g_abs = np.abs(npr_g)
-    npr_elem_gdiag = np.sum(npr_g_abs, axis=1)
-    npr_gdiag = np.diagflat(npr_elem_gdiag)
-
-    H = 1.j*npr_g -1.j*npr_gdiag
-
-    H = H.imag
-
-    lx = n1
-    ly = n2
-    Nx = lx*ly
+    lx = 20
+    Nx = lx*lx
     Jx = np.ones ((Nx,Nx))
-    Jx = H#.imag
     hx = np.zeros ((2, Nx))
-    maxStepx = 10000
+    maxStepx = 100000
 
-    #modeltype = "XY"
-    modeltype = "Ising"
-
-    if modeltype == "XY":
-        hx = np.zeros ((2, Nx))
-        modelx = XYModel(Nx, Jx, hx)
-    
-    elif modeltype == "Ising":
-        hx = np.zeros ((1, Nx))
-        modelx = IsingModel(Nx, Jx, hx)
-
-    statex, hamsx, timesx = modelx.annealing(maxStepx)
-
-    if modeltype == "XY":
-        phase = np.arctan2(statex[1,:],statex[0,:]).reshape(ly,lx) / np.pi + 0.5
-        phase = phase - phase[0][0]
-        phase = phase.flatten()
-        phase = np.array([x-2 if x>= 1.5 else x for x in phase])
-        phase = np.array([x+2 if x<=-0.5 else x for x in phase])
-    elif modeltype == "Ising":
-        phase = statex * statex[0]*(-1)
-        phase = (phase + 1) / 2
-    phase = phase.reshape(ly,lx)
+    modelx = XYModel (Nx, Jx, hx)
+    statex, hamsx, timesx = modelx.annealing (maxStepx)
 
     plt.figure ()
     plt.plot (timesx, hamsx)
     plt.xlabel ('times [sec]')
     plt.ylabel ('energy')
     plt.figure ()
-    im = plt.imshow (
-                phase,
-                cmap=cm.hot,
-                vmin=-1, vmax=1)
+    im = plt.imshow (np.arctan2 (statex[1,:],statex[0,:]).reshape (lx,lx), cmap=cm.hsv, vmin=0, vmax=2*np.pi)
     plt.colorbar(im)
 
-    ##############
 
-    phi = np.array(phase, dtype=complex)*np.pi
-    #v = np.exp(1.j*phi)
-
-    # tensor product
-    # phi_i - phi_j の値を持つ行列を作る
-    phi_i = phi.reshape(-1,1)
-    phi_j = phi.reshape(1,-1)
-    phi_ij = phi_i - phi_j
-
-    vtensor = np.cos(phi_ij)
-    # round
-    #vtensor = np.round(vtensor, 2).real
-    #print("vtensor:\n", vtensor)
-
-    loss = H * vtensor
-    loss = np.sum(loss)
-    print("loss:", loss)
-
-# %%
