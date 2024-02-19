@@ -183,8 +183,8 @@ if __name__ == "__main__":
     hx = np.zeros ((2, Nx))
     maxStepx = 10000
 
-    #modeltype = "XY"
-    modeltype = "Ising"
+    modeltype = "XY"
+    #modeltype = "Ising"
 
     if modeltype == "XY":
         hx = np.zeros ((2, Nx))
@@ -220,9 +220,11 @@ if __name__ == "__main__":
 
     ##############
 
-    phi = np.array(phase, dtype=complex)*np.pi
-    #v = np.exp(1.j*phi)
-
+    phi = np.array(phase)*np.pi
+    # phi[0][0] を基準にする
+    phi = phi - phi[0][0]
+    
+    
     # tensor product
     # phi_i - phi_j の値を持つ行列を作る
     phi_i = phi.reshape(-1,1)
@@ -230,12 +232,29 @@ if __name__ == "__main__":
     phi_ij = phi_i - phi_j
 
     vtensor = np.cos(phi_ij)
-    # round
-    #vtensor = np.round(vtensor, 2).real
-    #print("vtensor:\n", vtensor)
 
     loss = H * vtensor
     loss = np.sum(loss)
     print("loss:", loss)
+
+    # quiver
+    coef = 0.5
+    X = np.arange(0, lx, 1)
+    Y = np.arange(0, ly, 1)
+    X, Y = np.meshgrid(X, Y)
+    U = coef*np.cos(phi - np.pi/2)
+    V = coef*np.sin(phi - np.pi/2)
+    
+    plt.figure(figsize=(4,4))
+    plt.quiver(X-U/2, Y-V/2, U, V, angles='xy', scale_units='xy', scale=1)
+    plt.xlim(-0.5, lx-0.5)
+    plt.ylim(ly-0.5, -0.5)
+    plt.xlabel('location x')
+    plt.ylabel('location y')
+    
+    plt.show()
+
+
+
 
 # %%
