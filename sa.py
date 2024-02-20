@@ -1,9 +1,22 @@
 #%%
 # https://qiita.com/ShataKurashi/items/c0c6044e97fa9e4a9471
-import numpy as np
-import matplotlib.pyplot as plt
-from abc import *
-import time
+if True:
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
+    from matplotlib import rc
+    from abc import *
+    import time
+    rc('text', usetex=False)
+    fs = 18
+    plt.rcParams['font.family']= 'sans-serif'
+    plt.rcParams['font.sans-serif'] = ['Arial']
+    plt.rcParams["font.size"] = fs # 全体のフォントサイズが変更されます。
+    plt.rcParams['xtick.direction'] = 'in'#x軸の目盛線が内向き('in')か外向き('out')か双方向か('inout')
+    plt.rcParams['ytick.direction'] = 'in'#y軸の目盛線が内向き('in')か外向き('out')か双方向か('inout')
+
+
 
 class StatModel (ABC):
     def __init__ (self, N, J, h):
@@ -31,7 +44,7 @@ class StatModel (ABC):
         return 1/ (beta0 * np.log (2+step))
 
 
-    def annealing (self, maxStep, Tinit=1e3, C=0.995, seed=24):
+    def annealing (self, maxStep, Tinit=1e3, C=1-1e-3, seed=24):
         '''
         雑にSAする
         '''
@@ -97,7 +110,8 @@ class XYModel (StatModel):
         '''
         tmp1 = -0.5 * self.J * (state.T @ state)
         tmp2 = - self.h * state
-        return tmp1.sum() + tmp2.sum()
+        loss = tmp1.sum() + tmp2.sum()
+        return loss
 
     #override
     def update (self, state):
@@ -123,9 +137,10 @@ if __name__ == "__main__":
     # rand
     np.random.seed(0)
 
-    n1 = 5 # サイズ横
-    n2 = 5 # サイズ縦
+    n1 = 3 # サイズ横
+    n2 = 3 # サイズ縦
     npr_elem_gh = np.random.randn(n2,n1-1) # 横結合
+    #npr_elem_gh = np.ones((n2,n1-1)) # 横結合
     #npr_elem_gh = np.array([[1,1,1,-1,1,1,1,1,1]])
     """
     npr_elem_gh = np.array([
@@ -135,6 +150,7 @@ if __name__ == "__main__":
     """
     #npr_elem_gv = np.array([1,0,0,-1,1]) 
     npr_elem_gv = np.random.randn(n1*(n2-1)) # 縦結合
+    #npr_elem_gv = np.ones(n1*(n2-1)) # 縦結合
 
     """
     npr_elem_gh = np.array([
@@ -181,7 +197,7 @@ if __name__ == "__main__":
     Jx = np.ones ((Nx,Nx))
     Jx = H#.imag
     hx = np.zeros ((2, Nx))
-    maxStepx = 10000
+    maxStepx = 10000*3
 
     modeltype = "XY"
     #modeltype = "Ising"
@@ -196,6 +212,9 @@ if __name__ == "__main__":
 
     statex, hamsx, timesx = modelx.annealing(maxStepx)
 
+    loss = -0.5*np.sum(modelx.J * (statex.T @ statex))
+    print("loss:", loss)
+    
     if modeltype == "XY":
         phase = np.arctan2(statex[1,:],statex[0,:]).reshape(ly,lx) / np.pi + 0.5
         phase = phase - phase[0][0]
@@ -205,6 +224,7 @@ if __name__ == "__main__":
     elif modeltype == "Ising":
         phase = statex * statex[0]*(-1)
         phase = (phase + 1) / 2
+    phase_vec = phase.copy()    
     phase = phase.reshape(ly,lx)
 
     plt.figure ()
@@ -212,6 +232,7 @@ if __name__ == "__main__":
     plt.xlabel ('times [sec]')
     plt.ylabel ('energy')
     plt.figure ()
+    """
     im = plt.imshow (
                 phase,
                 cmap=cm.hot,
@@ -219,10 +240,12 @@ if __name__ == "__main__":
     plt.colorbar(im)
 
     ##############
+    """
 
     phi = np.array(phase)*np.pi
     # phi[0][0] を基準にする
     phi = phi - phi[0][0]
+    phi *= -1 # 反転対称性
     
     
     # tensor product
@@ -235,7 +258,7 @@ if __name__ == "__main__":
 
     loss = H * vtensor
     loss = np.sum(loss)
-    print("loss:", loss)
+    print("loss_replicated:", -loss/2)
 
     # quiver
     coef = 0.5
@@ -249,9 +272,15 @@ if __name__ == "__main__":
     plt.quiver(X-U/2, Y-V/2, U, V, angles='xy', scale_units='xy', scale=1)
     plt.xlim(-0.5, lx-0.5)
     plt.ylim(ly-0.5, -0.5)
-    plt.xlabel('location x')
-    plt.ylabel('location y')
+    #plt.xlabel('location x')
+    #plt.ylabel('location y')
     
+    plt.tick_params(labelbottom=False, labelleft=False, labelright=False, labeltop=False)
+    plt.tick_params(bottom=False, left=False, right=False, top=False)
+    #plt.box(False)
+    plt.tight_layout()
+
+
     plt.show()
 
 
