@@ -228,9 +228,9 @@ if __name__ == "__main__":
     phase = phase.reshape(ly,lx)
 
     plt.figure ()
-    plt.plot (timesx, hamsx)
-    plt.xlabel ('times [sec]')
-    plt.ylabel ('energy')
+    plt.plot (range(len(hamsx)), hamsx, color="gray")
+    plt.xlabel ('Iteration')    
+    plt.ylabel ('Energy')
     plt.figure ()
     """
     im = plt.imshow (
